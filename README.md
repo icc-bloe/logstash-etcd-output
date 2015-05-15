@@ -1,4 +1,5 @@
-# Logstash etcd output plugin
-This is a logstash plugin that enables to write your logstash events to etcd.
+# Logstash Output Plugin for etcd
 
+This is a plugin for [Logstash](https://github.com/elasticsearch/logstash).
+It lets you write logstash events to [etcd](https://github.com/coreos/etcd).
 
