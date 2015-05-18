@@ -6,12 +6,13 @@ RUN apt-get update && apt-get install -y \
   make \
   git \
   wget \
-  rubygems-integration \
-  supervisor && \
-  mkdir -p /var/log/supervisor
+  rubygems-integration 
 
-ADD logstash-1.4.2.tar.gz /logstash-1.4.2.tar.gz
+ADD https://download.elastic.co/logstash/logstash/logstash-1.4.2.tar.gz /logstash-1.4.2.tar.gz
+RUN tar -xzvf /logstash-1.4.2.tar.gz
+
 ADD logstash.cfg /logstash/logstash.cfg
 ADD start.sh /start.sh
+ADD install_plugin.sh /install_plugin.sh
 
 CMD /bin/bash
