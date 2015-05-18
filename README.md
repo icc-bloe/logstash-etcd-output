@@ -17,8 +17,10 @@ To do this execute this commands:
 # Clone this repository
 git clone https://github.com/icc-bloe/logstash-output-etcd.git
 cd logstash-output-etcd
+
 # Build the gem file
 gem build logstash-output-etcd.gemspec
+
 # Install the gem-file into logstash
 java -jar vendor/jar/jruby-complete-1.7.11.jar -S gem install /path/to/logstash-output-etcd-X.Y.Z.gem
 ```
@@ -29,22 +31,24 @@ The logstash output configuration uses the following parameters:
 ### etcd_ip
 This is the IP of the etcd endpoint where the events should be written to.  
 Type: string  
+Required: yes  
+Default Value: none  
+
 Example:  
 ```
 etcd_ip => "127.0.0.1"
 ```
+
+### etcd_port
+This is the port of the etcd endpoint where the events should be written to.  
+Type: Number  
 Required: yes  
 Default Value: none  
 
-### etcd_port
-This is the port of the etcd endpoint where the events should be written to.
-Type: Number  
 Example:  
 ```
 etcd_port => 4001
 ```
-Required: yes  
-Default Value: none  
 
 ### path
 This is the etcd-path where the values should be written to. If you want all your values in a static non-changing path you just write the path of the directory here:
@@ -68,14 +72,14 @@ This is the value that should be written to the defined etcd path. The value is 
 If this value is **not** set, the entire event is saved as json.
 
 Type: String  
-Example:  
-```
-# This writes the value of the field *message* to etcd
-value_field => "message"
-```
 Required: No  
 Default Value: none  
 
+Example:  
+```
+# This writes the value of the field 'message' to etcd
+value_field => "message"
+```
 
 ### Example Configuration
 The following example configuration can be tested with the generator input:
@@ -89,4 +93,3 @@ output {
   }
 }
 ```
-
