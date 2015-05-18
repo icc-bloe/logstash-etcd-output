@@ -22,6 +22,8 @@ cd logstash-output-etcd
 gem build logstash-output-etcd.gemspec
 
 # Install the gem-file into logstash
+cd /path/to/logstash
+export GEM_HOME=vendor/bundle/jruby/1.9
 java -jar vendor/jar/jruby-complete-1.7.11.jar -S gem install /path/to/logstash-output-etcd-X.Y.Z.gem
 ```
 
