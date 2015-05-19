@@ -83,6 +83,21 @@ Example:
 value_field => "message"
 ```
 
+### ttl
+You can define a TTL (time to live) value for your keys. After this time is up keys get deleted in etcd.
+If attribute is not defined or ttl is < 1, no ttl is used.
+
+Type: Number [in seconds]
+Required: No
+Default Value: none
+
+Example:
+```
+# This removes the keys after 10 seconds
+ttl => 10
+```
+
+
 ### Example Configuration
 The following example configuration can be tested with the generator input:
 ```
@@ -91,7 +106,15 @@ output {
   	etcd_ip => "10.1.42.1"
 	etcd_port => 4001
 	path => "/test/[host]/[sequence]"
+	ttl => 10
 	# value_field => "message"
   }
 }
+```
+
+### Date format
+If the path or the value field defined contains dates, they are formatted with the ISO8601 format.  
+Example date:
+```
+2015-05-19T13:37:39.164Z
 ```

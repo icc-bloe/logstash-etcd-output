@@ -1,11 +1,12 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/namespace"
+require "logstash/timestamp"
 require "httpclient"
 require "json"
 
 class LogStash::Outputs::Etcd < LogStash::Outputs::Base
-
+	include LogStash
 	# This is how you configure this filter from your logstash config.
 	#
 	# output {
@@ -24,6 +25,7 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 	config :etcd_port, :validate => :number, :required => true
 	config :path, :validate => :string, :required => true
 	config :value_field, :validate => :string, :required => false
+	config :ttl, :validate => :number, :required => false, :default => 0
 	
 	# New plugins should start life at milestone 1.
 	milestone 1
@@ -63,6 +65,7 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 		@logger.debug("etcd_port:", :etcd_port => @etcd_port)
 		@logger.debug("path:", :path => @path)
 		@logger.debug("value_field:", :value_field => defined?(@value_field) && @value_field.size > 0 ? @value_field : "{event as json}")
+		@logger.debug("TTL:", :TTL => defined?(@ttl) && @ttl > 0 ? @ttl : "{no TTL}")
 	end
 	
 	private
@@ -176,13 +179,22 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 	private
 	def extract_value(event, field_name)
 		value = event[field_name]
+		if value.respond_to?(:iso8601)
+			@logger.debug("value is a time, convert to ISO8601 format: ", :value => value)
+			value = value.iso8601(LogStash::Timestamp::ISO8601_PRECISION)
+		end
+		@logger.debug("class is #{value.class.name}")
 		@logger.debug("extracted value from event: ", :field_name => field_name, :value => value)
 		return value
 	end
 	
 	private
 	def save_value(path, value, attempt)
-		response = @etcd_connection.put(path, :value => value);
+		body = {:value => value}
+		if @ttl > 0
+			body[:ttl] = @ttl
+		end
+		response = @etcd_connection.put(path, body);
 		if is_http_status_successful(response.status_code)
 			@logger.debug("successfully saved value to etcd")
 		elsif is_http_status_redirect(response.status_code)
