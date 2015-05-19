@@ -1,7 +1,7 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/namespace"
-require "etcd"
+require "httpclient"
 require "json"
 
 class LogStash::Outputs::Etcd < LogStash::Outputs::Base
@@ -14,8 +14,9 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 	#			etcd_port => 4001
 	#			path => "/path/[value_1]/folder/[value_2]"
 	#			value_field => "message" (optional, if not set saves entire event as json)
-	#		}
+	#		} 
 	# }
+	
 	config_name "etcd"
 	
 	# configuration settings
@@ -34,7 +35,7 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 		validate_configuration()
 		parse_fields_in_path()
 		
-		@etcd_connection = create_etcd_connection(@etcd_ip, @etcd_port)
+		@etcd_connection = create_etcd_connection()
 		if(test_if_etcd_connection_works())
 			on_connection_success()
 		else
@@ -92,17 +93,47 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 		end
 	end
 	
+	private
+	def build_etcd_http_path(path_to_key)
+		etcd_path = "http://#{@etcd_ip}:#{@etcd_port.to_s}/v2/keys#{path_to_key}"
+		@logger.debug("Accessing etcd-path: #{etcd_path}")
+		return etcd_path
+	end
+	
 	protected
-	def create_etcd_connection(ip, port)
-		return Etcd.client(host: ip, port: port)
+	def create_etcd_connection()
+		return HTTPClient.new
+	end
+	
+	private
+	def is_http_status_between(status_code, lower_bound_inclusive, upper_bound_exclusive)
+		return status_code >= lower_bound_inclusive && status_code < upper_bound_exclusive;
+	end
+	
+	private
+	def is_http_status_successful(status_code)
+		return is_http_status_between(status_code,200,300)
+	end
+	
+	private
+	def is_http_status_redirect(status_code)
+		return is_http_status_between(status_code,300,400)
+	end
+	
+	private
+	def is_http_status_error()
+		return is_http_status_between(status_code,400,600)
 	end
 	
 	private
 	def test_if_etcd_connection_works		
 		begin
 			@logger.debug("test if etcd connection works by trying to read children of /")
-			response = @etcd_connection.get('/')
+			response = @etcd_connection.get(build_etcd_http_path('/'))
 			@logger.debug("got response", :response => response)
+			if !is_http_status_successful(response.status_code)
+				raise "Could not access etcd! HTTP Status Code: #{response.status_code}"
+			end
 			return true 
 		rescue Exception => e
 			@logger.error("Could not connect to etcd!", :exception => e, :stacktrace => e.backtrace)
@@ -121,8 +152,8 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 			else
 				value = extract_value(event, @value_field)
 			end
-			
-			save_value(dynamic_path, value)
+			path = build_etcd_http_path(dynamic_path)
+			save_value(path, value, 0)
 		rescue Exception => e
 			@logger.error("Unhandled exception", :exception => e, :stacktrace => e.backtrace, :event => event)
 		end	
@@ -150,7 +181,16 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 	end
 	
 	private
-	def save_value(path, value)
-		@etcd_connection.set(path, :value => value);
+	def save_value(path, value, attempt)
+		response = @etcd_connection.put(path, :value => value);
+		if is_http_status_successful(response.status_code)
+			@logger.debug("successfully saved value to etcd")
+		elsif is_http_status_redirect(response.status_code)
+			@logger.debug("got redirect response: try again with new location")
+			location = response.header["Location"][0]
+			save_value(location, value, attempt+1)
+		else
+			@logger.error("An error occurred accessing etcd!", :path => path, :value => value, :response_code => response.status_code, :response => response)
+		end
 	end
 end
