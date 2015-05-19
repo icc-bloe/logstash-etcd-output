@@ -32,19 +32,23 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 	
 	public
 	def register
-		@logger.debug("registering etcd output plugin") 
-		print_configuration()		
-		validate_configuration()
-		parse_fields_in_path()
-		
-		@etcd_connection = create_etcd_connection()
-		if(test_if_etcd_connection_works())
-			on_connection_success()
-		else
-			on_connection_error()
-		end
-		
-		@logger.debug("registered etcd output plugin") 
+		begin
+			@logger.debug("registering etcd output plugin") 
+			print_configuration()		
+			validate_configuration()
+			parse_fields_in_path()
+			
+			@etcd_connection = create_etcd_connection()
+			if(test_if_etcd_connection_works())
+				on_connection_success()
+			else
+				on_connection_error()
+			end
+			
+			@logger.debug("registered etcd output plugin") 
+		rescue Exception => e
+			@logger.error("Unhandled exception", :exception => e, :stacktrace => e.backtrace)
+		end	
 	end # def register
 	
 	private
