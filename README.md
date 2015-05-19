@@ -87,9 +87,9 @@ value_field => "message"
 You can define a TTL (time to live) value for your keys. After this time is up keys get deleted in etcd.
 If attribute is not defined or ttl is < 1, no ttl is used.
 
-Type: Number [in seconds]
-Required: No
-Default Value: none
+Type: Number [in seconds]  
+Required: No  
+Default Value: none  
 
 Example:
 ```
