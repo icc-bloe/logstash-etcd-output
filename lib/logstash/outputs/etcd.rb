@@ -6,7 +6,7 @@ require "httpclient"
 require "json"
 
 class LogStash::Outputs::Etcd < LogStash::Outputs::Base
-	include LogStash
+	
 	# This is how you configure this filter from your logstash config.
 	#
 	# output {
