@@ -1,12 +1,11 @@
 # encoding: utf-8
 require "logstash/outputs/base"
 require "logstash/namespace"
-require "logstash/timestamp"
 require "httpclient"
 require "json"
 
 class LogStash::Outputs::Etcd < LogStash::Outputs::Base
-	include LogStash
+	
 	# This is how you configure this filter from your logstash config.
 	#
 	# output {
@@ -185,7 +184,7 @@ class LogStash::Outputs::Etcd < LogStash::Outputs::Base
 		value = event[field_name]
 		if value.respond_to?(:iso8601)
 			@logger.debug("value is a time, convert to ISO8601 format: ", :value => value)
-			value = value.iso8601(LogStash::Timestamp::ISO8601_PRECISION)
+			value = value.iso8601(3)
 		end
 		@logger.debug("class is #{value.class.name}")
 		@logger.debug("extracted value from event: ", :field_name => field_name, :value => value)
